@@ -9,9 +9,7 @@ class User
 
     // object properties
     public $id;
-    public $firstname;
-    public $lastname;
-    public $email;
+    public $username;
     public $password;
 
     // constructor
@@ -28,24 +26,18 @@ class User
         // insert query
         $query = "INSERT INTO " . $this->table_name . "
             SET
-                firstname = :firstname,
-                lastname = :lastname,
-                email = :email,
+                username = :username,
                 password = :password";
 
         // prepare the query
         $stmt = $this->conn->prepare($query);
 
         // sanitize
-        $this->firstname = htmlspecialchars(strip_tags($this->firstname));
-        $this->lastname = htmlspecialchars(strip_tags($this->lastname));
-        $this->email = htmlspecialchars(strip_tags($this->email));
+        $this->username = htmlspecialchars(strip_tags($this->username));
         $this->password = htmlspecialchars(strip_tags($this->password));
 
         // bind the values
-        $stmt->bindParam(':firstname', $this->firstname);
-        $stmt->bindParam(':lastname', $this->lastname);
-        $stmt->bindParam(':email', $this->email);
+        $stmt->bindParam(':username', $this->username);
 
         // hash the password before saving to database
         $password_hash = password_hash($this->password, PASSWORD_BCRYPT);
@@ -59,25 +51,25 @@ class User
         return false;
     }
 
-    // emailExists() method will be here
-    // check if given email exist in the database
-    function emailExists()
+    // usernameExists() method will be here
+    // check if given username exist in the database
+    function usernameExists()
     {
 
-        // query to check if email exists
-        $query = "SELECT id, firstname, lastname, password
+        // query to check if username exists
+        $query = "SELECT id, password
             FROM " . $this->table_name . "
-            WHERE email = ?
+            WHERE username = ?
             LIMIT 0,1";
 
         // prepare the query
         $stmt = $this->conn->prepare($query);
 
         // sanitize
-        $this->email = htmlspecialchars(strip_tags($this->email));
+        $this->username = htmlspecialchars(strip_tags($this->username));
 
-        // bind given email value
-        $stmt->bindParam(1, $this->email);
+        // bind given username value
+        $stmt->bindParam(1, $this->username);
 
         // execute the query
         $stmt->execute();
@@ -85,7 +77,7 @@ class User
         // get number of rows
         $num = $stmt->rowCount();
 
-        // if email exists, assign values to object properties for easy access and use for php sessions
+        // if username exists, assign values to object properties for easy access and use for php sessions
         if ($num > 0) {
 
             // get record details / values
@@ -93,15 +85,13 @@ class User
 
             // assign values to object properties
             $this->id = $row['id'];
-            $this->firstname = $row['firstname'];
-            $this->lastname = $row['lastname'];
             $this->password = $row['password'];
 
-            // return true because email exists in the database
+            // return true because username exists in the database
             return true;
         }
 
-        // return false if email does not exist in the database
+        // return false if username does not exist in the database
         return false;
     }
 
@@ -116,9 +106,7 @@ class User
         // if no posted password, do not update the password
         $query = "UPDATE " . $this->table_name . "
             SET
-                firstname = :firstname,
-                lastname = :lastname,
-                email = :email
+                username = :username
                 {$password_set}
             WHERE id = :id";
 
@@ -126,14 +114,10 @@ class User
         $stmt = $this->conn->prepare($query);
 
         // sanitize
-        $this->firstname = htmlspecialchars(strip_tags($this->firstname));
-        $this->lastname = htmlspecialchars(strip_tags($this->lastname));
-        $this->email = htmlspecialchars(strip_tags($this->email));
+        $this->username = htmlspecialchars(strip_tags($this->username));
 
         // bind the values from the form
-        $stmt->bindParam(':firstname', $this->firstname);
-        $stmt->bindParam(':lastname', $this->lastname);
-        $stmt->bindParam(':email', $this->email);
+        $stmt->bindParam(':username', $this->username);
 
         // hash the password before saving to database
         if (!empty($this->password)) {

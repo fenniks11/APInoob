@@ -1,22 +1,25 @@
 <?php
 // required headers
-header("Access-Control-Allow-Origin: http://localhost/APInoob/");
+header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // files for decoding jwt will be here
-// required to decode jwt
+// required to encode json web token
 include_once 'config/core.php';
-include_once 'libs/php-jwt-main/src/BeforeValidException.php';
-include_once 'libs/php-jwt-main/src/ExpiredException.php';
-include_once 'libs/php-jwt-main/src/SignatureInvalidException.php';
-include_once 'libs/php-jwt-main/src/JWT.php';
-include_once 'libs/php-jwt-main/src/Key.php';
+require_once 'libs/php-jwt-main/src/BeforeValidException.php';
+require_once 'libs/php-jwt-main/src/ExpiredException.php';
+require_once 'libs/php-jwt-main/src/SignatureInvalidException.php';
+require_once 'libs/php-jwt-main/src/JWT.php';
+require_once 'libs/php-jwt-main/src/JWT.php';
+require_once 'libs/php-jwt-main/src/Key.php';
 
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
+
+// database connection will be here
 // files needed to connect to database
 include_once 'config/database.php';
 include_once 'objects/user.php';
@@ -28,29 +31,27 @@ $db = $database->getConnection();
 // instantiate user object
 $user = new User($db);
 
-// retrieve given jwt here
+// retrieve given jwt heres
 // get posted data
 $data = json_decode(file_get_contents("php://input"));
 
 // get jwt
-$jwt = isset($data->jwt) ? $data->jwt : "";
+$refresh_token = isset($data->refresh_token) ? $data->refresh_token : "";
+// echo $refresh_token;
 
-// decode jwt here
-// if jwt is not empty
-if ($jwt) {
+// decode refresh_token here
+// if refresh_token is not empty
+if ($refresh_token) {
 
     // if decode succeed, show user details
     try {
 
-        // decode jwt
-        // $decoded = JWT::decode($jwt, $key, array('HS256'));
-        $decoded = JWT::decode($jwt, new Key($key, 'HS256'));
+        // decode refresh_token
+        $decoded = JWT::decode($refresh_token, new Key($key, 'HS256'));
 
         // set user property values here
         // set user property values
-        $user->firstname = $data->firstname;
-        $user->lastname = $data->lastname;
-        $user->email = $data->email;
+        $user->username = $data->username;
         $user->password = $data->password;
         $user->id = $decoded->data->id;
 
@@ -58,6 +59,39 @@ if ($jwt) {
         // update the user record
         if ($user->update()) {
             // regenerate jwt will be here
+            // we need to re-generate jwt because user details might be different
+            $token = array(
+                "iat" => $issued_at,
+                "exp" => $expiration_time,
+                "iss" => $issuer,
+                "data" => array(
+                    "id" => $user->id,
+                    "username" => $user->username
+                )
+            );
+            $refresh_token = array(
+                "iat" => $issued_at,
+                "iss" => $issuer,
+                "data" => array(
+                    "id" => $user->id,
+                    "username" => $user->username
+                )
+            );
+            $jwt = JWT::encode($token, $key, 'HS256');
+            $jwt_refresh = JWT::encode($refresh_token, $key, 'HS256');
+
+            // set response code
+            http_response_code(200);
+
+            // response in json format
+            echo json_encode(
+                array(
+                    "message" => "User was updated.",
+                    "jwt" => $jwt,
+                    "expiration_time" => $expiration_time,
+                    "refresh token" => $jwt_refresh
+                )
+            );
         }
 
         // message if unable to update user
@@ -68,30 +102,6 @@ if ($jwt) {
             // show error message
             echo json_encode(array("message" => "Unable to update user."));
         }
-        // we need to re-generate jwt because user details might be different
-        $token = array(
-            "iat" => $issued_at,
-            "exp" => $expiration_time,
-            "iss" => $issuer,
-            "data" => array(
-                "id" => $user->id,
-                "firstname" => $user->firstname,
-                "lastname" => $user->lastname,
-                "email" => $user->email
-            )
-        );
-        $jwt = JWT::encode($token, $key, 'HS256');
-
-        // set response code
-        http_response_code(200);
-
-        // response in json format
-        echo json_encode(
-            array(
-                "message" => "User was updated.",
-                "jwt" => $jwt
-            )
-        );
     }
 
     // catch failed decoding will be here

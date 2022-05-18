@@ -18,13 +18,13 @@ $db = $database->getConnection();
 // instantiate user object
 $user = new User($db);
 
-// check email existence here
+// check username existence here
 // get posted data
 $data = json_decode(file_get_contents("php://input"));
 
 // set product property values
-$user->email = $data->email;
-$email_exists = $user->emailExists();
+$user->username = $data->username;
+$username_exists = $user->usernameExists();
 
 // files for jwt will be here
 // generate json web token
@@ -37,8 +37,8 @@ include_once 'libs/php-jwt-main/src/JWT.php';
 use \Firebase\JWT\JWT;
 
 // generate jwt will be here
-// check if email exists and if password is correct
-if ($email_exists && password_verify($data->password, $user->password)) {
+// check if username exists and if password is correct
+if ($username_exists && password_verify($data->password, $user->password)) {
 
     $token = array(
         "iat" => $issued_at,
@@ -46,22 +46,31 @@ if ($email_exists && password_verify($data->password, $user->password)) {
         "iss" => $issuer,
         "data" => array(
             "id" => $user->id,
-            "firstname" => $user->firstname,
-            "lastname" => $user->lastname,
-            "email" => $user->email
+            "username" => $user->username
         )
     );
+    $refresh_token = array(
+        "iat" => $issued_at,
+        "iss" => $issuer,
+        "data" => array(
+            "id" => $user->id,
+            "username" => $user->username
+        )
+    );
+
 
     // set response code
     http_response_code(200);
 
     // generate jwt
     $jwt = JWT::encode($token, $key, 'HS256');
+    $jwt_refresh = JWT::encode($refresh_token, $key, 'HS256');
     echo json_encode(
         array(
             "message" => "Successful login.",
             "jwt" => $jwt,
-            "expired" => $expiration_time
+            "expired jwt" => $expiration_time,
+            "refresh token" => $jwt_refresh
         )
     );
 }
