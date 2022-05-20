@@ -8,8 +8,8 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 
 // database connection will be here
 // files needed to connect to database
-include_once 'config/database.php';
-include_once 'objects/user.php';
+include_once '../config/database.php';
+include_once '../objects/user.php';
 
 // get database connection
 $database = new Database();
@@ -28,11 +28,11 @@ $username_exists = $user->usernameExists();
 
 // files for jwt will be here
 // generate json web token
-include_once 'config/core.php';
-include_once 'libs/php-jwt-main/src/BeforeValidException.php';
-include_once 'libs/php-jwt-main/src/ExpiredException.php';
-include_once 'libs/php-jwt-main/src/SignatureInvalidException.php';
-include_once 'libs/php-jwt-main/src/JWT.php';
+include_once '../config/core.php';
+include_once '../libs/php-jwt-main/src/BeforeValidException.php';
+include_once '../libs/php-jwt-main/src/ExpiredException.php';
+include_once '../libs/php-jwt-main/src/SignatureInvalidException.php';
+include_once '../libs/php-jwt-main/src/JWT.php';
 
 use \Firebase\JWT\JWT;
 
