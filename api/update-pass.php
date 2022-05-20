@@ -37,6 +37,7 @@ $data = json_decode(file_get_contents("php://input"));
 
 // get jwt
 $refresh_token = isset($data->refresh_token) ? $data->refresh_token : "";
+// echo $refresh_token;
 
 // decode refresh_token here
 // if refresh_token is not empty
@@ -44,20 +45,40 @@ if ($refresh_token) {
 
     // if decode succeed, show user details
     try {
-        $decoded = JWT::decode($refresh_token, new Key($key, 'HS256'));
+
         // decode refresh_token
-        if ($decoded == true) {
+        $decoded = JWT::decode($refresh_token, new Key($key, 'HS256'));
+
+        // set user property values here
+        // set user property values
+        $user->username = $data->username;
+        $user->password = $data->password;
+        $user->id = $decoded->data->id;
+
+        // update user will be here
+        // update the user record
+        if ($user->update()) {
+            // regenerate jwt will be here
+            // we need to re-generate jwt because user details might be different
             $token = array(
                 "iat" => $issued_at,
                 "exp" => $expiration_time,
                 "iss" => $issuer,
                 "data" => array(
-                    "id" => $decoded->data->id,
-                    "username" => $decoded->data->username
+                    "id" => $user->id,
+                    "username" => $user->username
                 )
             );
-
+            $refresh_token = array(
+                "iat" => $issued_at,
+                "iss" => $issuer,
+                "data" => array(
+                    "id" => $user->id,
+                    "username" => $user->username
+                )
+            );
             $jwt = JWT::encode($token, $key, 'HS256');
+            $jwt_refresh = JWT::encode($refresh_token, $key, 'HS256');
 
             // set response code
             http_response_code(200);
@@ -65,16 +86,21 @@ if ($refresh_token) {
             // response in json format
             echo json_encode(
                 array(
-                    "message" => "Successful get new token access.",
+                    "message" => "User was updated.",
                     "jwt" => $jwt,
-                    "expiration_time" => $expiration_time
+                    "expiration_time" => $expiration_time,
+                    "refresh token" => $jwt_refresh
                 )
             );
-        } else {
+        }
+
+        // message if unable to update user
+        else {
+            // set response code
             http_response_code(401);
 
             // show error message
-            echo json_encode(array("message" => "Unable to get new token."));
+            echo json_encode(array("message" => "Unable to update user."));
         }
     }
 
